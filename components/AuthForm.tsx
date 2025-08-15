@@ -142,8 +142,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
           {mode === 'login' && (
             <button
               type="button"
-              onClick={() => {
-                const { error } = supabase.auth.signUp({
+              onClick={async () => {
+                const { error } = await supabase.auth.signUp({
                   email,
                   password,
                   options: {
@@ -153,7 +153,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 if (error) {
                   setError(error.message)
                 } else {
-                  setError('Check your email for confirmation link!')
+                  setSuccess('Check your email for confirmation link!')
                 }
               }}
               disabled={loading}

@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
-import TripayDemo from '@/components/TripayDemo'
+
+const TripayDemo = dynamic(() => import('@/components/TripayDemo'), {
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-gray-500">Loading dashboard...</div>
+    </div>
+  ),
+  ssr: false
+})
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
@@ -25,7 +34,7 @@ export default function Dashboard() {
     checkUser()
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event) => {
         if (event === 'SIGNED_OUT') {
           router.push('/auth/login')
         }

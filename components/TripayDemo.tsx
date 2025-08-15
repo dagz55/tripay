@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { Plus, Calendar, DollarSign, Building2, FileText, Trash2, Edit3 } from 'lucide-react'
+import { useTripay } from '@/hooks/useTripay'
+import { Plus, Calendar, DollarSign, Building2, Trash2 } from 'lucide-react'
 
-interface Tripay {
+// Tripay interface removed as it's not being used
+interface TripayPayable {
   id: number
   user_id: string
   vendor: string
@@ -21,8 +23,7 @@ interface Tripay {
 }
 
 export default function TripayDemo({ userId }: { userId: string }) {
-  const [tripay, setTripay] = useState<Tripay[]>([])
-  const [loading, setLoading] = useState(true)
+  const { tripay, loading, mutate } = useTripay(userId)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingField, setEditingField] = useState<string>('')
   const [editingValue, setEditingValue] = useState<string>('')
@@ -32,8 +33,6 @@ export default function TripayDemo({ userId }: { userId: string }) {
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
   useEffect(() => {
-    fetchTripay()
-    
     // Set up real-time subscription
     const subscription = supabase
       .channel('Tripay')
@@ -42,34 +41,13 @@ export default function TripayDemo({ userId }: { userId: string }) {
         schema: 'public', 
         table: 'Tripay',
         filter: `user_id=eq.${userId}`
-      }, handleRealtimeUpdate)
+      }, () => mutate())
       .subscribe()
 
     return () => {
       supabase.removeChannel(subscription)
     }
-  }, [userId])
-
-  const fetchTripay = async () => {
-    const { data, error } = await supabase
-      .from('Tripay')
-      .select('*')
-      .eq('user_id', userId)
-      .order('due_date', { ascending: true })
-
-    if (data) setTripay(data)
-    setLoading(false)
-  }
-
-  const handleRealtimeUpdate = (payload: any) => {
-    if (payload.eventType === 'INSERT') {
-      setTripay(prev => [...prev, payload.new])
-    } else if (payload.eventType === 'UPDATE') {
-      setTripay(prev => prev.map(p => p.id === payload.new.id ? payload.new : p))
-    } else if (payload.eventType === 'DELETE') {
-      setTripay(prev => prev.filter(p => p.id !== payload.old.id))
-    }
-  }
+  }, [userId, mutate])
 
   const handleSave = async (id: number, field: string, value: any) => {
     const { error } = await supabase
@@ -79,6 +57,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
 
     if (!error) {
       showTemporaryNotification('Changes saved')
+      mutate()
     }
     setEditingId(null)
     setEditingField('')
@@ -86,7 +65,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
   }
 
   const handleAdd = async () => {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('Tripay')
       .insert({
         user_id: userId,
@@ -97,12 +76,10 @@ export default function TripayDemo({ userId }: { userId: string }) {
         category: 'General',
         invoice_number: `INV-${Date.now()}`
       })
-      .select()
-      .single()
 
-    if (data) {
-      setTripay(prev => [...prev, data])
+    if (!error) {
       showTemporaryNotification('New payable added')
+      mutate()
     }
   }
 
@@ -114,8 +91,8 @@ export default function TripayDemo({ userId }: { userId: string }) {
         .eq('id', id)
 
       if (!error) {
-        setTripay(prev => prev.filter(p => p.id !== id))
         showTemporaryNotification('Payable deleted')
+        mutate()
       }
     }
   }
