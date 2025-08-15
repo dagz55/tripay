@@ -1,5 +1,10 @@
-# Welcome to Tripay - Payables Management App
-A modern, Apple-inspired accounts payable management system built with Next.js, Tailwind CSS, and Supabase. Features real-time updates, calendar views, inline editing, and PDF receipt extraction.
+# Welcome to Tripay - Payables Management 
+![Tech Stack](https://img.shields.io/badge/Next.js-14.0-black?style=flat-square&logo=next.js)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38bdf8?style=flat-square&logo=tailwind-css&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-1.0-3ecf8e?style=flat-square&logo=supabase&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat-square&logo=typescript&logoColor=white)
+
+## A modern, Apple-inspired accounts payable management system built with Next.js, Tailwind CSS, and Supabase. Features real-time updates, calendar views, inline editing, and PDF receipt extraction.
 Authored by Dagz Suarez
 
 ✨ Features
