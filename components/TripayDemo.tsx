@@ -6,21 +6,6 @@ import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import { useTripay } from '@/hooks/useTripay'
 import { Plus, Calendar, DollarSign, Building2, Trash2 } from 'lucide-react'
 
-// Tripay interface removed as it's not being used
-interface TripayPayable {
-  id: number
-  user_id: string
-  vendor: string
-  amount: number
-  due_date: string
-  status: 'pending' | 'approved' | 'paid'
-  category: string | null
-  invoice_number: string
-  notes: string | null
-  contact: string | null
-  created_at: string
-  updated_at: string
-}
 
 export default function TripayDemo({ userId }: { userId: string }) {
   const { tripay, loading, mutate } = useTripay(userId)
@@ -50,49 +35,79 @@ export default function TripayDemo({ userId }: { userId: string }) {
   }, [userId, mutate])
 
   const handleSave = async (id: number, field: string, value: any) => {
-    const { error } = await supabase
-      .from('Tripay')
-      .update({ [field]: value })
-      .eq('id', id)
+    try {
+      const { error } = await supabase
+        .from('Tripay')
+        .update({ [field]: value })
+        .eq('id', id)
 
-    if (!error) {
+      if (error) {
+        console.error('Error saving changes:', error)
+        showTemporaryNotification('Error saving changes: ' + error.message)
+        return
+      }
+
       showTemporaryNotification('Changes saved')
       mutate()
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      showTemporaryNotification('Unexpected error occurred')
+    } finally {
+      setEditingId(null)
+      setEditingField('')
+      setEditingValue('')
     }
-    setEditingId(null)
-    setEditingField('')
-    setEditingValue('')
   }
 
   const handleAdd = async () => {
-    const { error } = await supabase
-      .from('Tripay')
-      .insert({
-        user_id: userId,
-        vendor: 'New Vendor',
-        amount: 0,
-        due_date: new Date().toISOString().split('T')[0],
-        status: 'pending',
-        category: 'General',
-        invoice_number: `INV-${Date.now()}`
-      })
+    try {
+      const { data, error } = await supabase
+        .from('Tripay')
+        .insert({
+          user_id: userId,
+          vendor: 'New Vendor',
+          amount: 0,
+          due_date: new Date().toISOString().split('T')[0],
+          status: 'pending' as const,
+          category: 'General',
+          invoice_number: `INV-${Date.now()}`
+        })
+        .select()
 
-    if (!error) {
+      if (error) {
+        console.error('Error adding payable:', error)
+        showTemporaryNotification('Error adding payable: ' + error.message)
+        return
+      }
+
+      console.log('Successfully added payable:', data)
       showTemporaryNotification('New payable added')
       mutate()
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      showTemporaryNotification('Unexpected error occurred')
     }
   }
 
   const handleDelete = async (id: number) => {
     if (confirm('Are you sure you want to delete this payable?')) {
-      const { error } = await supabase
-        .from('Tripay')
-        .delete()
-        .eq('id', id)
+      try {
+        const { error } = await supabase
+          .from('Tripay')
+          .delete()
+          .eq('id', id)
 
-      if (!error) {
+        if (error) {
+          console.error('Error deleting payable:', error)
+          showTemporaryNotification('Error deleting payable: ' + error.message)
+          return
+        }
+
         showTemporaryNotification('Payable deleted')
         mutate()
+      } catch (err) {
+        console.error('Unexpected error:', err)
+        showTemporaryNotification('Unexpected error occurred')
       }
     }
   }
