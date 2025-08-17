@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
-import { useTripay } from '@/hooks/useTripay'
+import { usePayables } from '@/hooks/usePayables'
 import { Plus, Calendar, DollarSign, Building2, Trash2 } from 'lucide-react'
 
 
 export default function TripayDemo({ userId }: { userId: string }) {
-  const { tripay, loading, mutate } = useTripay(userId)
+  const { payables, loading, mutate } = usePayables(userId)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingField, setEditingField] = useState<string>('')
   const [editingValue, setEditingValue] = useState<string>('')
@@ -20,11 +20,11 @@ export default function TripayDemo({ userId }: { userId: string }) {
   useEffect(() => {
     // Set up real-time subscription
     const subscription = supabase
-      .channel('Tripay')
+      .channel('payables')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'Tripay',
+        table: 'payables',
         filter: `user_id=eq.${userId}`
       }, () => mutate())
       .subscribe()
@@ -37,7 +37,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
   const handleSave = async (id: number, field: string, value: any) => {
     try {
       const { error } = await supabase
-        .from('Tripay')
+        .from('payables')
         .update({ [field]: value })
         .eq('id', id)
 
@@ -62,7 +62,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
   const handleAdd = async () => {
     try {
       const { data, error } = await supabase
-        .from('Tripay')
+        .from('payables')
         .insert({
           user_id: userId,
           vendor: 'New Vendor',
@@ -93,7 +93,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
     if (confirm('Are you sure you want to delete this payable?')) {
       try {
         const { error } = await supabase
-          .from('Tripay')
+          .from('payables')
           .delete()
           .eq('id', id)
 
@@ -117,15 +117,15 @@ export default function TripayDemo({ userId }: { userId: string }) {
     setTimeout(() => setNotification(''), 3000)
   }
 
-  const filteredTripay = tripay.filter(payable => {
+  const filteredPayables = payables.filter(payable => {
     const matchesSearch = payable.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          payable.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || payable.status === filterStatus
     return matchesSearch && matchesStatus
   })
 
-  const totalAmount = filteredTripay.reduce((sum, p) => sum + p.amount, 0)
-  const pendingAmount = filteredTripay.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0)
+  const totalAmount = filteredPayables.reduce((sum, p) => sum + p.amount, 0)
+  const pendingAmount = filteredPayables.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0)
 
   if (loading) {
     return (
@@ -185,7 +185,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Vendors</p>
-                <p className="text-2xl font-bold text-gray-900">{new Set(filteredTripay.map(p => p.vendor)).size}</p>
+                <p className="text-2xl font-bold text-gray-900">{new Set(filteredPayables.map(p => p.vendor)).size}</p>
               </div>
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function TripayDemo({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTripay.map((payable) => (
+                  {filteredPayables.map((payable) => (
                     <tr key={payable.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         {editingId === payable.id && editingField === 'vendor' ? (
